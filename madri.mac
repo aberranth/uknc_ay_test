@@ -1,0 +1,129 @@
+; vim: set filetype=asmpdp11 :
+
+		.MCall	.Print, .Exit
+
+		.RADIX	8
+
+AY	=	177714
+;===============================================================================
+
+Start:		.Print	#title
+
+Init:		RESET
+		CLRB	R0
+		MOVB	#012,R2		;f000  LD   D,0Ah
+					;f002  LD   C,FDh
+		CALL	AYOut		;f004  CALL F070h	;amplitude of chan C
+		DECB	R2		;f007  DEC  D
+		CALL	AYOut		;f008  CALL F070h	;amplitude of chan B
+		DECB	R2		;f00b  DEC  D
+		CALL	AYOut		;f00c  CALL F070h	;amplitude of chan A
+		DECB	R2		;f00f  DEC  D
+		MOVB	#370,R0		;f010  LD   A,F8h	;mix noise-generators only
+		CALL	AYOut		;f012  CALL F070h	;mixer register
+		MOVB	#001,R0		;f015  LD   A,01h
+		MOVB	#003,R2		;f017  LD   D,03h
+		CALL	AYOut		;f019  CALL F070h	;higher 4-bit of chan B
+		MOVB	#005,R2		;f01c  LD   D,05h
+		CALL	AYOut		;f01e  CALL F070h	;higher 4-bit of chan C
+					;f021  RET
+		MOV	@#100,@#SysHand	;store current timer int handler
+		MOV	#TimerInt,@#100	;set a new timer int handler
+
+WaitInt:	WAIT
+		BR	WaitInt
+
+		.Print	#done
+		.Exit
+
+TimerInt:	CALL	Player
+		JMP	@SysHand
+SysHand:	.WORD	0
+
+Player:		MOVB	#003,R0		;f022  LD   A,03h
+		DECB	R0		;f024  DEC  A
+		BICB	#374,R0		;f025  AND  03h
+		MOVB	R0,@#Player+2	;f027  LD   (F023h),A
+		BEQ	1$		;f02a  RET  NZ
+		RETURN
+;-------------------------------------------------------------------------------
+; Cycle amplitude of all three channels down and up
+1$:		MOVB	#017,R0		;f02b  LD   A,0Fh
+		INCB	R0		;f02d  INC  A
+		CMPB	R0,#020		;f02e  CP   10h		;if A == 16
+		BNE	2$		;f030  JR   NZ,F034
+		NEGB	R0		;f032  NEG		;then A = 240
+2$:		MOVB    R0,@#1$+2	;f034  LD   (F02Ch),A
+		CMPB	R0,#200		;f037  CP   80h		;
+		MFPS	R4		;store PSW, since COM(unlike CPL) sets C flag
+		BLO	3$		;f039  JR   C,F03Ch	;A < 128 means that amplitude is rising
+		COMB	R0		;f03b  CPL		;else amplitude is falling
+					;f03c  LD   C,FDh
+3$:		MOVB	#010,R2		;f03e  LD   D,08h
+		CALL	AYOut		;f040  CALL F070h
+		INCB	R2		;f043  INC  D
+		CALL	AYOut		;f044  CALL F070h
+		INCB	R2		;f047  INC  D
+		CALL	AYOut		;f048  CALL F070h
+		MTPS	R4		;restore PSW
+		BLO	4$  		;f04b  RET  NC		;amplitude is rising
+		RETURN						;amplitude is fallig
+;-------------------------------------------------------------------------------
+4$:		TSTB	R0		;f04c  OR   A
+		BEQ	5$		;f04d  RET  NZ		;amplitude just started to rise
+		RETURN			;
+5$:		MOV	#F085,R3	;f04e  LD   HL,F085h
+		CLRB	R2		;f051  LD   D,A		;lower 8-bit of chan A
+		MOVB	(R3)+,R0	;f052  OR   (HL)
+		BNE	6$		;f053  JR   NZ,F059h	;0 is a marker of end of dataset
+		MOV	#F079,R3	;f055  LD   HL,F079h	;reset data pointer
+		MOVB	(R3)+,R0	;f058  LD   A,(HL)
+6$:		CALL	AYOut		;f059  CALL F070h
+					;f05c  INC  HL
+		MOVB	(R3)+,R0	;f05d  LD   A,(HL)
+		INCB	R2		;f05e  INC  D		;higher 4-bit of chan A
+		CALL	AYOut		;f05f  CALL F070h
+					;f062  INC  HL
+		MOVB	(R3)+,R0	;f063  LD   A,(HL)
+		INCB	R2		;f064  INC  D		;lower 8-bit of chan B
+		CALL	AYOut		;f065  CALL F070h
+					;f068  INC  HL
+		MOVB	(R3)+,R0	;f069  LD   A,(HL)
+		MOVB	#004,R2		;f06a  LD   D,04h	;lower 8-bit of chan C
+					;f06c  INC  HL
+		MOV	R3,@#5$+2	;f06d  LD   (F04Fh),HL
+
+AYOut:					;f070  LD   B,FFh	;B higher byte of port address
+		MOVB	R2,R1
+	        COMB	R1
+		MOV	R1,@#AY		;f072  OUT  (C),D	;C lower byte of port address
+					;f074  LD   B,BFh
+	        MOVB	R0,R1
+	        COMB	R1
+	        MOVB	R1,@#AY		 ;f076  OUT  (C),A
+	        RETURN			 ;f078  RET
+
+;===============================================================================
+
+title:		.ASCIZ	"Matthew Westcott - Madrielle (1K Intro)"
+done:		.ASCIZ	"done."
+
+F079:		;f079  | A8  01  64  1B| 16  02  C1  64| 35  02  A8  64|
+		.BYTE	250,001,144,033,026,002,301,144,065,002,250,144
+F085:		;f085  | 35  02  C1  79| 16  02  A8  64| 16  02  90  3D|
+		.BYTE	065,002,301,171,026,002,250,144,026,002,220,075
+		;      | 35  02  A8  64| 35  02  C1  79| A8  01  64  1B|
+		.BYTE 	065,002,250,144,065,002,301,171,250,001,144,033
+		;      | C1  01  64  0B| C1  01  64  3D| DC  01  79  1B|
+		.BYTE	301,001,144,013,301,001,144,075,334,001,171,033
+		;      | 16  02  A8  64| 16  02  90  3D| 35  02  A8  79|
+		.BYTE	026,002,250,144,026,002,220,075,065,002,250,171
+		;      | C1  01  79  3D| 00
+		.BYTE	301,001,171,075,000
+
+		.Even
+
+;===============================================================================
+
+		.End	Start
+
