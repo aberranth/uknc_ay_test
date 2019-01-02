@@ -1,160 +1,159 @@
-; vim: set filetype=asmpdp11 tabstop=8 noexpandtab shiftwidth=8 autoindent :
+; vim: set filetype=asmpdp11 tabstop=8 expandtab shiftwidth=4 autoindent :
 
-		.MCall	.Print, .Exit
+                .MCall  .Print, .Exit
 
-		.RADIX	8
+                .RADIX  8
 
 
-AY	=	177714
+                AY = 177714
 ;===============================================================================
 
-Start:		.Print	#title
-		.Print	#misca
-		.Print	#miscb
+Start:          .Print  #title
+                .Print  #misca
+                .Print  #miscb
 
-Init:		RESET
-		MOV	@#100,@#SysHand
-		MOV	#TimerInt,@#100
+Init:           RESET
+                MOV     @#100,@#SysHand
+                MOV     #TimerInt,@#100
 
-WaitInt:	WAIT
-		BR	WaitInt
+WaitInt:        WAIT
+                BR      WaitInt
 
-TimerInt:	CALL	Player
-		JMP	@SysHand
-SysHand:	.WORD	0
+TimerInt:       CALL    Player
+                JMP     @SysHand
+SysHand:        .WORD   0
 
-AYOut:		MOVB	R0,R5
-		COMB	R5
-		MOV	R5,(R1)
-		MOVB	R2,R5
-		COMB	R5
-		MOVB	R5,(R1)
-		RETURN
+AYOut:          MOVB    R0,R5
+                COMB    R5
+                MOV     R5,(R1)
+                MOVB    R2,R5
+                COMB    R5
+                MOVB    R5,(R1)
+                RETURN
 
-Player:		
-lF738:		MOV	#offsets,R3	;F738  ld  hl, 8368h	;init procedure sets the value to 8000h
-		MOV	(R3)+,R2	;F73B  ld  e, (hl)
-					;F73C  inc hl
-					;F73D  ld  d, (hl)
-					;F73E  inc hl
-		BITB	#1,R2		;odd value - end of song
-		BEQ	1$
+Player:
+lF738:          MOV     #offsets,R3     ;F738  ld  hl, 8368h    ;init procedure sets the value to 8000h
+                MOV     (R3)+,R2        ;F73B  ld  e, (hl)
+                                        ;F73C  inc hl
+                                        ;F73D  ld  d, (hl)
+                                        ;F73E  inc hl
+                BITB    #1,R2           ;odd value - end of song
+                BEQ     1$
 
-		MOV	@#SysHand,@#100
-		RESET
-		.Print	#done
-		.Exit
+                MOV     @#SysHand,@#100
+                RESET
+                .Print  #done
+                .Exit
 
-1$:		MOV	R3,@#lF738+2	;F73F  ld  (loc_F738+1), hl
-		MOV	R2,R3		;F742  ex  de, hl
-		ADD	#AYdata,R3
-		MOV	#AY,R1		;F743  ld  c, 0FDh
-		CLRB	R0		;F745  xor a
-					;F746  ld  b, 0FFh
-					;F748  out (c), a
-		MOVB	(R3)+,R2	;F74A  ld  e, (hl)
-					;F74B  inc hl
-					;F74C  ld  b, 0BFh
-		CALL	AYOut		;F74E  out (c), e
-		INCB	R0		;F750  inc a
-					;F751  ld  b, 0FFh
-					;F753  out (c), a
-		MOVB	(R3)+,R2	;F755  ld  e, (hl)
-					;F756  inc hl
-					;F757  ld  b, 0BFh
-		CALL	AYOut		;F759  out (c), e
-		INCB	R0		;F75B  inc a
-					;F75C  ld  b, 0FFh
-					;F75E  out (c), a
-		MOVB	R2,R4
-		MOVB	(R3)+,R2	;F760  ld  d, (hl)
-					;F761  inc hl
-					;F762  ld  b, 0BFh
-		CALL	AYOut		;F764  out (c), d
-		INCB	R0		;F766  inc a
-					;F767  ld  b, 0FFh
-					;F769  out (c), a
-		MOVB	R4,R2		;F76B  ld  a, e
-		RORB	R2		;F76C  rrca
-		RORB	R2		;F76D  rrca
-		RORB	R2		;F76E  rrca
-		RORB	R2		;F76F  rrca
-					;F770  ld  b, 0BFh
-		CALL	AYOut		;F772  out (c), a
-		MOVB	#004,R0		;F774  ld  a, 4
-					;F776  ld  b, 0FFh
-					;F778  out (c), a
-		MOVB	(R3)+,R2	;F77A  ld  e, (hl)
-					;F77B  inc hl
-					;F77C  ld  b, 0BFh
-		CALL	AYOut		;F77E  out (c), e
-		MOVB	#006,R0		;F780  ld  a, 6
-					;F782  ld  b, 0FFh
-					;F784  out (c), a
-		MOVB	(R3)+,R2	;F786  ld  e, (hl)
-					;F787  inc hl
-					;F788  ld  b, 0BFh
-		CALL	AYOut		;F78A  out (c), e
-		INCB	R0		;F78C  inc a
-					;F78D  ld  b, 0FFh
-					;F78F  out (c), a
-		MOVB	(R3)+,R2	;F791  ld  e, (hl)
-					;F792  inc hl
-					;F793  ld  b, 0BFh
-		CALL	AYOut		;F795  out (c), e
-		INCB	R0		;F797  inc a
-					;F798  ld  b, 0FFh
-					;F79A  out (c), a
-		MOVB	(R3)+,R2	;F79C  ld  a, (hl)
-					;F79D  inc hl
-		MOVB	R2,R4		;F79E  ld  e, a
-		BICB	#360,R2		;F79F  and 0Fh
-					;F7A1  ld  b, 0BFh
-		CALL	AYOut		;F7A3  out (c), a
-		MOVB	#011,R0		;F7A5  ld  a, 9
-					;F7A7  ld  b, 0FFh
-					;F7A9  out (c), a
-		MOVB	R4,R2		;F7AB  ld  a, e
-		RORB	R2		;F7AC  rrca
-		RORB	R2		;F7AD  rrca
-		RORB	R2		;F7AE  rrca
-		RORB	R2		;F7AF  rrca
-		BICB	#360,R2		;F7B0  and 0Fh
-					;F7B2  ld  b, 0BFh
-		CALL	AYOut		;F7B4  out (c), a
-		MOVB	#012,R0		;F7B6  ld  a, 0Ah
-					;F7B8  ld  b, 0FFh
-					;F7BA  out (c), a
-		MOVB	(R3)+,R2	;F7BC  ld  a, (hl)
-		MOVB	R2,R4		;F7BD  ld  e, a
-		BICB	#360,R2		;F7BE  and 0Fh
-					;F7C0  ld  b, 0BFh
-		CALL	AYOut		;F7C2  out (c), a
-		MOVB	#005,R0		;F7C4  ld  a, 5
-					;F7C6  ld  b, 0FFh
-					;F7C8  out (c), a
-		MOVB	R4,R2		;F7CA  ld  a, e
-		RORB	R2		;F7CB  rrca
-		RORB	R2		;F7CC  rrca
-		RORB	R2		;F7CD  rrca
-		RORB	R2		;F7CE  rrca
-					;F7CF  ld  b, 0BFh
-		CALL	AYOut		;F7D1  out (c), a
-		RETURN
+1$:             MOV     R3,@#lF738+2    ;F73F  ld  (loc_F738+1), hl
+                MOV     R2,R3           ;F742  ex  de, hl
+                ADD     #AYdata,R3
+                MOV     #AY,R1          ;F743  ld  c, 0FDh
+                CLRB    R0              ;F745  xor a
+                                        ;F746  ld  b, 0FFh
+                                        ;F748  out (c), a
+                MOVB    (R3)+,R2        ;F74A  ld  e, (hl)
+                                        ;F74B  inc hl
+                                        ;F74C  ld  b, 0BFh
+                CALL    AYOut           ;F74E  out (c), e
+                INCB    R0              ;F750  inc a
+                                        ;F751  ld  b, 0FFh
+                                        ;F753  out (c), a
+                MOVB    (R3)+,R2        ;F755  ld  e, (hl)
+                                        ;F756  inc hl
+                                        ;F757  ld  b, 0BFh
+                CALL    AYOut           ;F759  out (c), e
+                INCB    R0              ;F75B  inc a
+                                        ;F75C  ld  b, 0FFh
+                                        ;F75E  out (c), a
+                MOVB    R2,R4
+                MOVB    (R3)+,R2        ;F760  ld  d, (hl)
+                                        ;F761  inc hl
+                                        ;F762  ld  b, 0BFh
+                CALL    AYOut           ;F764  out (c), d
+                INCB    R0              ;F766  inc a
+                                        ;F767  ld  b, 0FFh
+                                        ;F769  out (c), a
+                MOVB    R4,R2           ;F76B  ld  a, e
+                RORB    R2              ;F76C  rrca
+                RORB    R2              ;F76D  rrca
+                RORB    R2              ;F76E  rrca
+                RORB    R2              ;F76F  rrca
+                                        ;F770  ld  b, 0BFh
+                CALL    AYOut           ;F772  out (c), a
+                MOVB    #004,R0         ;F774  ld  a, 4
+                                        ;F776  ld  b, 0FFh
+                                        ;F778  out (c), a
+                MOVB    (R3)+,R2        ;F77A  ld  e, (hl)
+                                        ;F77B  inc hl
+                                        ;F77C  ld  b, 0BFh
+                CALL    AYOut           ;F77E  out (c), e
+                MOVB    #006,R0         ;F780  ld  a, 6
+                                        ;F782  ld  b, 0FFh
+                                        ;F784  out (c), a
+                MOVB    (R3)+,R2        ;F786  ld  e, (hl)
+                                        ;F787  inc hl
+                                        ;F788  ld  b, 0BFh
+                CALL    AYOut           ;F78A  out (c), e
+                INCB    R0              ;F78C  inc a
+                                        ;F78D  ld  b, 0FFh
+                                        ;F78F  out (c), a
+                MOVB    (R3)+,R2        ;F791  ld  e, (hl)
+                                        ;F792  inc hl
+                                        ;F793  ld  b, 0BFh
+                CALL    AYOut           ;F795  out (c), e
+                INCB    R0              ;F797  inc a
+                                        ;F798  ld  b, 0FFh
+                                        ;F79A  out (c), a
+                MOVB    (R3)+,R2        ;F79C  ld  a, (hl)
+                                        ;F79D  inc hl
+                MOVB    R2,R4           ;F79E  ld  e, a
+                BICB    #360,R2         ;F79F  and 0Fh
+                                        ;F7A1  ld  b, 0BFh
+                CALL    AYOut           ;F7A3  out (c), a
+                MOVB    #011,R0         ;F7A5  ld  a, 9
+                                        ;F7A7  ld  b, 0FFh
+                                        ;F7A9  out (c), a
+                MOVB    R4,R2           ;F7AB  ld  a, e
+                RORB    R2              ;F7AC  rrca
+                RORB    R2              ;F7AD  rrca
+                RORB    R2              ;F7AE  rrca
+                RORB    R2              ;F7AF  rrca
+                BICB    #360,R2         ;F7B0  and 0Fh
+                                        ;F7B2  ld  b, 0BFh
+                CALL    AYOut           ;F7B4  out (c), a
+                MOVB    #012,R0         ;F7B6  ld  a, 0Ah
+                                        ;F7B8  ld  b, 0FFh
+                                        ;F7BA  out (c), a
+                MOVB    (R3)+,R2        ;F7BC  ld  a, (hl)
+                MOVB    R2,R4           ;F7BD  ld  e, a
+                BICB    #360,R2         ;F7BE  and 0Fh
+                                        ;F7C0  ld  b, 0BFh
+                CALL    AYOut           ;F7C2  out (c), a
+                MOVB    #005,R0         ;F7C4  ld  a, 5
+                                        ;F7C6  ld  b, 0FFh
+                                        ;F7C8  out (c), a
+                MOVB    R4,R2           ;F7CA  ld  a, e
+                RORB    R2              ;F7CB  rrca
+                RORB    R2              ;F7CC  rrca
+                RORB    R2              ;F7CD  rrca
+                RORB    R2              ;F7CE  rrca
+                                        ;F7CF  ld  b, 0BFh
+                CALL    AYOut           ;F7D1  out (c), a
+                RETURN
 
 ;===============================================================================
+title:          .ASCIZ  "ShockMegademo 02 - Composed by Ziutek/ESI 1991"
+misca:          .ASCIZ  "Rip by SLaM/USL"
+miscb:          .ASCIZ  "UKNC conversion by aberrant_hacker"
 
-title:		.ASCIZ	"ShockMegademo 02 - Composed by Ziutek/ESI 1991"
-misca:		.ASCIZ	"Rip by SLaM/USL"
-miscb:		.ASCIZ	"UKNC conversion by aberrant_hacker"
+done:           .ASCIZ  "done."
 
-done:		.ASCIZ	"done."
+                .Even
 
-		.Even
-
-		.Include /shockp.mac/
-		.Include /shockd.mac/
+                .Include /shockp.mac/
+                .Include /shockd.mac/
 ;===============================================================================
 
-		.End	Start
+                .End    Start
 

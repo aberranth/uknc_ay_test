@@ -1,7 +1,7 @@
 data = File.binread('ShockMegaDemo02.ay')
 offset = 0x8000 - 0x70
 header ="; "
-header += "vim: set filetype=asmpdp11 tabstop=8 noexpandtab shiftwidth=8 autoindent :\n"
+header += "vim: set filetype=asmpdp11 tabstop=8 expandtab shiftwidth=4 autoindent :\n"
 header += "\t.RADIX\t16\n"
 
 File.open('shockp.mac', 'w') do |f|
